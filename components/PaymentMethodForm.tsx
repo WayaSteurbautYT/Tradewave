@@ -4,6 +4,8 @@ import { Button } from './ui/button';
 
 interface PaymentMethodFormProps {
   user: any;
+  onSuccess?: () => void;
+  onCustomerCreated?: (customerId: string) => void;
 }
 
 const CARD_ELEMENT_OPTIONS = {
@@ -24,13 +26,14 @@ const CARD_ELEMENT_OPTIONS = {
   },
 };
 
-const PaymentMethodForm: React.FC<PaymentMethodFormProps> = ({ user }) => {
+const PaymentMethodForm: React.FC<PaymentMethodFormProps> = ({ user, onSuccess, onCustomerCreated }) => {
   const stripe = useStripe();
   const elements = useElements();
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [success, setSuccess] = useState(false);
   const [clientSecret, setClientSecret] = useState<string | null>(null);
+  const [customerId, setCustomerId] = useState<string | null>(null);
 
   useEffect(() => {
     async function fetchClientSecret() {
@@ -38,16 +41,9 @@ const PaymentMethodForm: React.FC<PaymentMethodFormProps> = ({ user }) => {
       setLoading(true);
       setError(null);
       try {
-        const res = await fetch('/api/stripe/setup-intent', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ uid: user.uid, email: user.email }),
-        });
-        const data = await res.json();
-        if (data.clientSecret) {
-          setClientSecret(data.clientSecret);
-        } else {
-          setError(data.error || 'Could not get client secret.');
+        const clientSecret = await createSetupIntent();
+        if (clientSecret) {
+          setClientSecret(clientSecret);
         }
       } catch (err: any) {
         setError('Failed to connect to payment server.');
@@ -57,6 +53,36 @@ const PaymentMethodForm: React.FC<PaymentMethodFormProps> = ({ user }) => {
     }
     fetchClientSecret();
   }, [user]);
+
+  const createSetupIntent = async () => {
+    try {
+      setLoading(true);
+      setError(null);
+      
+      const response = await fetch('/api/stripe/setup-intent', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          uid: user.uid,
+          email: user.email
+        })
+      });
+      
+      if (!response.ok) {
+        throw new Error('Failed to create setup intent');
+      }
+      
+      const { clientSecret, customerId } = await response.json();
+      setCustomerId(customerId);
+      onCustomerCreated?.(customerId);
+      return clientSecret;
+    } catch (err) {
+      setError(err.message);
+      throw err;
+    } finally {
+      setLoading(false);
+    }
+  };
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -84,13 +110,18 @@ const PaymentMethodForm: React.FC<PaymentMethodFormProps> = ({ user }) => {
     }
     // Optionally, send setupIntent.payment_method to your backend to save
     setSuccess(true);
+    onSuccess?.();
     setLoading(false);
   };
 
   return (
     <form onSubmit={handleSubmit} className="space-y-4">
       <CardElement options={CARD_ELEMENT_OPTIONS} className="p-3 bg-teal-900/30 rounded border border-teal-800" />
-      {error && <div className="text-red-500 text-sm">{error}</div>}
+      {error && (
+        <div className="text-red-500 text-sm mt-2">
+          {error}
+        </div>
+      )}
       {success && <div className="text-green-500 text-sm">Card saved successfully!</div>}
       <Button type="submit" disabled={!stripe || loading || !clientSecret} className="bg-teal-600 hover:bg-teal-700 text-white">
         {loading ? 'Saving...' : 'Save Card'}

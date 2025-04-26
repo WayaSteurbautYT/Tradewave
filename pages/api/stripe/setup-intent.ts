@@ -16,13 +16,27 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
   }
 
   try {
-    // Optionally, you can attach the SetupIntent to a Stripe Customer
-    // For now, just create a SetupIntent
+    // First find or create customer
+    let customer = await stripe.customers.list({ email });
+    if (customer.data.length === 0) {
+      customer = await stripe.customers.create({
+        email,
+        metadata: { uid }
+      });
+    } else {
+      customer = customer.data[0];
+    }
+
     const setupIntent = await stripe.setupIntents.create({
+      customer: customer.id,
       metadata: { uid, email },
     });
-    return res.status(200).json({ clientSecret: setupIntent.client_secret });
+
+    return res.status(200).json({ 
+      clientSecret: setupIntent.client_secret,
+      customerId: customer.id 
+    });
   } catch (error: any) {
     return res.status(500).json({ error: error.message });
   }
-} 
+}
