@@ -139,4 +139,21 @@
 - [ ] Advanced Content Tools
 - [ ] International Support
 - [ ] API Access
-- [ ] Developer Tools 
+- [ ] Developer Tools
+
+# Features & Changelog
+
+## Latest Updates
+
+### Seamless Onboarding & Profile Creation
+- Automatic user and profile creation after login/signup (Google, email, or anonymous).
+- Improved role selection: updates Firestore and routes users correctly.
+- Profile setup ensures a profile exists and allows role changes without logging out.
+
+### Stripe Payment Method Integration
+- Stripe Elements card input on the profile page for secure card addition/update.
+- `/api/stripe/setup-intent` endpoint for SetupIntent client secret.
+
+---
+
+See `README.md` for a summary and next steps. 
