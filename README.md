@@ -10,6 +10,11 @@
 - Role selection is improved: authenticated users update their role in Firestore and are routed to profile setup or dashboard.
 - Profile setup ensures a profile exists and allows role changes without logging out.
 
+### User Profile Editing
+- Users can edit display name, bio, location, website, and social links from the profile edit page.
+- Profile data is managed through AuthContext and saved via `updateUserProfile` in `lib/firestoreService.ts`.
+- UI enhanced with loading skeletons, success/error feedback.
+
 ### Stripe Payment Method Integration
 - Users can now add or update their card securely from the profile page using Stripe Elements.
 - A new API endpoint (`/api/stripe/setup-intent`) creates a Stripe SetupIntent and returns the client secret for secure card setup.
@@ -23,5 +28,8 @@
 
 For more details, see the code and comments in the relevant files:
 - `app/profile/page.tsx`
+- `app/profile/overview/page.tsx`
+- `app/profile/edit/page.tsx`
 - `components/PaymentMethodForm.tsx`
-- `pages/api/stripe/setup-intent.ts` 
+- `pages/api/stripe/setup-intent.ts`
+- `lib/firestoreService.ts` 
