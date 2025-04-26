@@ -10,6 +10,9 @@ import { useAuth } from "@/lib/context/auth-context"
 import { useToast } from "@/components/ui/use-toast"
 import { db } from "@/lib/firebase"
 import { doc, setDoc, getDoc, serverTimestamp } from "firebase/firestore"
+// @ts-ignore-next-line
+// If you see a type error for zxcvbn, add a declaration file or install @types/zxcvbn if available
+// eslint-disable-next-line @typescript-eslint/no-unused-vars
 import zxcvbn from "zxcvbn"
 
 function PasswordStrengthBar({ password }: { password: string }) {
@@ -46,8 +49,9 @@ export function SignupForm() {
     return null
   }
 
-  async function createUserIfNotExists(user: any) {
+  async function createUserAndProfileIfNotExists(user: any) {
     const userRef = doc(db, "users", user.uid)
+    const profileRef = doc(db, "profiles", user.uid)
     const userSnap = await getDoc(userRef)
     if (!userSnap.exists()) {
       const role = localStorage.getItem("tradewave_role") || "viewer"
@@ -58,6 +62,23 @@ export function SignupForm() {
         createdAt: serverTimestamp(),
       })
     }
+    const profileSnap = await getDoc(profileRef)
+    if (!profileSnap.exists()) {
+      const role = localStorage.getItem("tradewave_role") || "viewer"
+      const username = user.email ? user.email.split("@") [0] : user.uid.slice(0, 8)
+      await setDoc(profileRef, {
+        uid: user.uid,
+        email: user.email || null,
+        role,
+        username,
+        name: user.displayName || username,
+        joinDate: new Date().toLocaleString(),
+        tokens: 0,
+        skills: [],
+      })
+      return false // profile was just created
+    }
+    return true // profile already existed
   }
 
   async function onSubmit(e: React.FormEvent) {
@@ -66,9 +87,9 @@ export function SignupForm() {
     setError(null)
     try {
       const cred = await signUp(email, password)
-      await createUserIfNotExists(cred.user)
+      const profileExists = await createUserAndProfileIfNotExists(cred.user)
       toast({ title: "Success", description: "Account created. You are now signed in." })
-      router.push("/profile/setup")
+      router.push(profileExists ? "/dashboard" : "/profile/setup")
     } catch (error: any) {
       setError(error?.message || "Could not create account.")
       toast({ variant: "destructive", title: "Error", description: error?.message || "Could not create account." })
@@ -82,9 +103,9 @@ export function SignupForm() {
     setError(null)
     try {
       const cred = await signInWithGoogle()
-      await createUserIfNotExists(cred.user)
+      const profileExists = await createUserAndProfileIfNotExists(cred.user)
       toast({ title: "Success", description: "You have been signed up with Google." })
-      router.push("/profile/setup")
+      router.push(profileExists ? "/dashboard" : "/profile/setup")
     } catch (error: any) {
       setError(error?.message || "Could not sign up with Google.")
       toast({ variant: "destructive", title: "Error", description: error?.message || "Could not sign up with Google." })
@@ -98,9 +119,9 @@ export function SignupForm() {
     setError(null)
     try {
       const cred = await signInAnonymously()
-      await createUserIfNotExists(cred.user)
+      const profileExists = await createUserAndProfileIfNotExists(cred.user)
       toast({ title: "Success", description: "You are signed up as a guest." })
-      router.push("/profile/setup")
+      router.push(profileExists ? "/dashboard" : "/profile/setup")
     } catch (error: any) {
       setError(error?.message || "Could not sign up as guest.")
       toast({ variant: "destructive", title: "Error", description: error?.message || "Could not sign up as guest." })

@@ -4,15 +4,46 @@ import Link from "next/link"
 import { useRouter } from "next/navigation"
 import { Button } from "@/components/ui/button"
 import { useState } from "react"
+import { useAuth } from "@/lib/context/auth-context"
+import { db } from "@/lib/firebase"
+import { doc, setDoc, getDoc } from "firebase/firestore"
 
 export default function RoleSelectionPage() {
   const router = useRouter()
+  const { user } = useAuth()
   const [role, setRole] = useState<string | null>(null)
+  const [loading, setLoading] = useState(false)
 
-  const handleContinue = () => {
-    if (role) {
-      // Store role in localStorage or pass as query param
-      localStorage.setItem("tradewave_role", role)
+  const handleContinue = async () => {
+    if (!role) return
+    localStorage.setItem("tradewave_role", role)
+    if (user) {
+      setLoading(true)
+      // Update user and profile in Firestore
+      const userRef = doc(db, "users", user.uid)
+      const profileRef = doc(db, "profiles", user.uid)
+      await setDoc(userRef, { role }, { merge: true })
+      // Create profile if missing
+      const profileSnap = await getDoc(profileRef)
+      if (!profileSnap.exists()) {
+        // Generate username from email or UID
+        const username = user.email ? user.email.split("@")[0] : user.uid.slice(0, 8)
+        await setDoc(profileRef, {
+          uid: user.uid,
+          email: user.email || null,
+          role,
+          username,
+          name: user.displayName || username,
+          joinDate: new Date().toLocaleString(),
+          tokens: 0,
+          skills: [],
+        })
+      } else {
+        await setDoc(profileRef, { role }, { merge: true })
+      }
+      setLoading(false)
+      router.push("/profile/setup")
+    } else {
       router.push("/login")
     }
   }
@@ -40,8 +71,8 @@ export default function RoleSelectionPage() {
             Creator (Upload content, get hired)
           </Button>
         </div>
-        <Button onClick={handleContinue} disabled={!role} className="w-full mt-4">
-          Continue
+        <Button onClick={handleContinue} disabled={!role || loading} className="w-full mt-4">
+          {loading ? "Saving..." : "Continue"}
         </Button>
         <p className="text-xs text-muted-foreground text-center mt-2">
           You can change your role later in your profile settings.

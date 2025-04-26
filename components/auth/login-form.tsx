@@ -25,8 +25,9 @@ export function LoginForm() {
     return null
   }
 
-  async function createUserIfNotExists(user: any) {
+  async function createUserAndProfileIfNotExists(user: any) {
     const userRef = doc(db, "users", user.uid)
+    const profileRef = doc(db, "profiles", user.uid)
     const userSnap = await getDoc(userRef)
     if (!userSnap.exists()) {
       const role = localStorage.getItem("tradewave_role") || "viewer"
@@ -37,6 +38,23 @@ export function LoginForm() {
         createdAt: serverTimestamp(),
       })
     }
+    const profileSnap = await getDoc(profileRef)
+    if (!profileSnap.exists()) {
+      const role = localStorage.getItem("tradewave_role") || "viewer"
+      const username = user.email ? user.email.split("@")[0] : user.uid.slice(0, 8)
+      await setDoc(profileRef, {
+        uid: user.uid,
+        email: user.email || null,
+        role,
+        username,
+        name: user.displayName || username,
+        joinDate: new Date().toLocaleString(),
+        tokens: 0,
+        skills: [],
+      })
+      return false // profile was just created
+    }
+    return true // profile already existed
   }
 
   async function onSubmit(e: React.FormEvent) {
@@ -45,9 +63,9 @@ export function LoginForm() {
     setError(null)
     try {
       const cred = await signIn(email, password)
-      await createUserIfNotExists(cred.user)
+      const profileExists = await createUserAndProfileIfNotExists(cred.user)
       toast({ title: "Success", description: "You have been logged in." })
-      router.push("/profile/setup")
+      router.push(profileExists ? "/dashboard" : "/profile/setup")
     } catch (error: any) {
       setError(error?.message || "Invalid email or password.")
       toast({ variant: "destructive", title: "Error", description: error?.message || "Invalid email or password." })
@@ -61,9 +79,9 @@ export function LoginForm() {
     setError(null)
     try {
       const cred = await signInWithGoogle()
-      await createUserIfNotExists(cred.user)
+      const profileExists = await createUserAndProfileIfNotExists(cred.user)
       toast({ title: "Success", description: "You have been logged in with Google." })
-      router.push("/profile/setup")
+      router.push(profileExists ? "/dashboard" : "/profile/setup")
     } catch (error: any) {
       setError(error?.message || "Could not login with Google.")
       toast({ variant: "destructive", title: "Error", description: error?.message || "Could not login with Google." })
@@ -77,9 +95,9 @@ export function LoginForm() {
     setError(null)
     try {
       const cred = await signInAnonymously()
-      await createUserIfNotExists(cred.user)
+      const profileExists = await createUserAndProfileIfNotExists(cred.user)
       toast({ title: "Success", description: "You are signed in anonymously." })
-      router.push("/profile/setup")
+      router.push(profileExists ? "/dashboard" : "/profile/setup")
     } catch (error: any) {
       setError(error?.message || "Could not sign in anonymously.")
       toast({ variant: "destructive", title: "Error", description: error?.message || "Could not sign in anonymously." })

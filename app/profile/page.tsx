@@ -37,6 +37,9 @@ import { useAuth } from "@/lib/context/auth-context"
 import { db } from "@/lib/firebase"
 import { doc, getDoc, setDoc, collection, addDoc, serverTimestamp } from "firebase/firestore"
 import { getStorage, ref, uploadBytes, getDownloadURL } from "firebase/storage"
+import { Elements } from '@stripe/react-stripe-js';
+import { loadStripe } from '@stripe/stripe-js';
+import PaymentMethodForm from '../../components/PaymentMethodForm';
 
 type ProfileType = {
   name: string;
@@ -51,6 +54,8 @@ type ProfileType = {
   skills: string[];
   tokens: number;
 };
+
+const stripePromise = loadStripe(process.env.NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY!);
 
 export default function ProfilePage() {
   const { user } = useAuth()
@@ -690,6 +695,18 @@ export default function ProfilePage() {
                 ))}
               </div>
             </div>
+
+            <Card className="bg-[#0f172a] border-teal-800 mt-8">
+              <CardHeader>
+                <CardTitle className="text-teal-300">Payment Method</CardTitle>
+                <CardDescription>Add or update your card for purchases and payouts.</CardDescription>
+              </CardHeader>
+              <CardContent>
+                <Elements stripe={stripePromise}>
+                  <PaymentMethodForm user={user} />
+                </Elements>
+              </CardContent>
+            </Card>
           </div>
         </div>
       </div>
