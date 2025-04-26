@@ -3,7 +3,7 @@
 import React, { createContext, useContext, useState, useEffect, ReactNode } from 'react';
 import { onAuthStateChanged, User, signOut as firebaseSignOut, sendEmailVerification as firebaseSendEmailVerification } from 'firebase/auth';
 import { auth } from '@/lib/firebase'; // Assuming auth is exported from firebase.ts
-import { upsertUser, getUserProfile, UserProfile } from '@/lib/firestoreService'; // Import Firestore functions
+import { upsertUser, getUserProfile, updateUserProfile, UserProfile } from '@/lib/firestoreService'; // Import Firestore functions
 
 interface AuthContextType {
     user: User | null;
@@ -13,10 +13,20 @@ interface AuthContextType {
     emailVerified: boolean;
     sendEmailVerification: () => Promise<void>;
     refreshProfile: () => Promise<void>;
+    updateProfile: (profileData: Partial<UserProfile>) => Promise<void>;
     // Add sign-in methods if needed here, or handle them in specific components/pages
 }
 
-const AuthContext = createContext<AuthContextType | undefined>(undefined);
+const AuthContext = createContext<AuthContextType>({
+    user: null,
+    userProfile: null,
+    loading: true,
+    logout: async () => {},
+    emailVerified: false,
+    sendEmailVerification: async () => {},
+    refreshProfile: async () => {},
+    updateProfile: async () => {},
+});
 
 export const AuthProvider = ({ children }: { children: ReactNode }) => {
     const [user, setUser] = useState<User | null>(null);
@@ -93,6 +103,15 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
         }
     };
 
+    const updateProfile = async (profileData: Partial<UserProfile>) => {
+        if (user) {
+            await updateUserProfile(user.uid, profileData);
+            // Refresh user profile data
+            const updatedProfile = await getUserProfile(user.uid);
+            setUserProfile(updatedProfile);
+        }
+    };
+
     return (
         <AuthContext.Provider
             value={{
@@ -103,6 +122,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
                 emailVerified: user?.emailVerified ?? false,
                 sendEmailVerification,
                 refreshProfile,
+                updateProfile,
             }}
         >
             {children}

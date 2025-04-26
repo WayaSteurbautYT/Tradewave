@@ -2,22 +2,26 @@ import { db } from './firebase';
 import { doc, setDoc, getDoc, updateDoc, serverTimestamp, collection, query, where, getDocs } from 'firebase/firestore';
 
 export interface UserProfile {
-    uid: string;
-    email?: string | null;
-    displayName?: string | null;
-    photoURL?: string | null;
-    role?: string | null; // e.g., 'buyer', 'freelancer', 'fan', 'artist', 'developer', 'creator'
-    createdAt: any; // Firestore Timestamp
-    updatedAt: any; // Firestore Timestamp
-    stripeCustomerId?: string | null; // Added for Stripe integration
-    // Add editable profile fields
-    username?: string | null; // Consider uniqueness implications if allowing edit
-    bio?: string | null;
-    location?: string | null;
-    website?: string | null;
-    github?: string | null;
-    twitter?: string | null;
-    linkedin?: string | null;
+  uid: string;
+  displayName: string;
+  email: string;
+  photoURL?: string;
+  role?: 'buyer' | 'seller';
+  username?: string;
+  bio?: string;
+  location?: string;
+  website?: string;
+  github?: string;
+  twitter?: string;
+  linkedin?: string;
+  instagram?: string;
+  youtube?: string;
+  tokens?: number;
+  totalEarnings?: number;
+  subscriptionActive?: boolean;
+  stripeCustomerId?: string;
+  createdAt: any; // Firestore Timestamp
+  updatedAt: any; // Firestore Timestamp
 }
 
 // Function to create or update user data in Firestore
@@ -30,12 +34,13 @@ export const upsertUser = async (user: { uid: string; email?: string | null; dis
             // Create new user document
             const newUserProfile: UserProfile = {
                 uid: user.uid,
-                email: user.email,
-                displayName: user.displayName,
-                photoURL: user.photoURL,
-                role: null, // Role not set initially
+                displayName: user.displayName || '',
+                email: user.email || '',
+                photoURL: user.photoURL || undefined,
+                role: undefined,
                 createdAt: serverTimestamp(),
                 updatedAt: serverTimestamp(),
+                // Initialize other fields as needed
             };
             await setDoc(userRef, newUserProfile);
             console.log("New user document created for:", user.uid);
@@ -47,10 +52,10 @@ export const upsertUser = async (user: { uid: string; email?: string | null; dis
             const existingData = userSnap.data() as UserProfile;
             const updates: Partial<UserProfile> = {};
             if (user.displayName !== existingData.displayName) {
-                updates.displayName = user.displayName;
+                updates.displayName = user.displayName || '';
             }
             if (user.photoURL !== existingData.photoURL) {
-                updates.photoURL = user.photoURL;
+                updates.photoURL = user.photoURL || undefined;
             }
             if (Object.keys(updates).length > 0) {
                  updates.updatedAt = serverTimestamp();
@@ -122,7 +127,7 @@ export const updateUserProfile = async (uid: string, profileData: Partial<UserPr
     // Filter out fields that shouldn't be directly updated here (like uid, email, role, etc.)
     // Define fields that ARE allowed to be updated through this function
     const allowedUpdates: Partial<UserProfile> = {
-        displayName: profileData.displayName,
+        displayName: profileData.displayName || '',
         // username: profileData.username, // Add validation/uniqueness check if enabling username edits
         bio: profileData.bio,
         location: profileData.location,
@@ -130,6 +135,8 @@ export const updateUserProfile = async (uid: string, profileData: Partial<UserPr
         github: profileData.github,
         twitter: profileData.twitter,
         linkedin: profileData.linkedin,
+        instagram: profileData.instagram,
+        youtube: profileData.youtube,
         // We should always update the 'updatedAt' timestamp
         updatedAt: serverTimestamp()
     };

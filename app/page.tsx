@@ -8,163 +8,184 @@ import { useEffect } from 'react';
 
 'use client';
 
-export default function Home() {
+export default function HomePage() {
   const { user, userProfile, loading } = useAuth();
   const router = useRouter();
-  useEffect(() => {
-    if (!loading && user) {
-      if (!userProfile?.role) router.push('/signin');
-      else router.replace('/profile/overview');
+
+  const handleGetStarted = () => {
+    if (user) {
+      if (userProfile?.role === 'buyer') {
+        router.push('/dashboard/buyer');
+      } else if (userProfile?.role === 'seller') {
+        router.push('/dashboard/seller');
+      } else {
+        router.push('/select-role');
+      }
+    } else {
+      router.push('/signin');
     }
-  }, [user, userProfile, loading, router]);
-  if (loading) return <div className="flex items-center justify-center min-h-screen">Loading...</div>;
-  if (user) return <div className="flex items-center justify-center min-h-screen">Redirecting...</div>;
+  };
+
+  const handleExploreMarketplace = () => {
+    router.push('/marketplace');
+  };
 
   return (
-    <div className="flex min-h-screen flex-col bg-gradient-to-br from-teal-500 via-blue-900 to-purple-900 text-white">
+    <div className="flex flex-col min-h-screen bg-gradient-to-br from-[#00BFA6] to-[#1E3A8A] text-white">
+      {/* Header */}
+      <header className="p-6 flex justify-between items-center max-w-7xl mx-auto">
+        <h1 className="text-3xl font-bold text-[#FFD700]">TradeWave</h1>
+        <div className="flex gap-4">
+          {user ? (
+            <Button 
+              variant="outline" 
+              className="bg-transparent border-[#FFD700] text-[#FFD700] hover:bg-[#FFD700] hover:text-[#1E3A8A]"
+              onClick={() => router.push(userProfile?.role === 'buyer' ? '/dashboard/buyer' : userProfile?.role === 'seller' ? '/dashboard/seller' : '/select-role')}
+            >
+              Dashboard
+            </Button>
+          ) : (
+            <Button 
+              variant="outline" 
+              className="bg-transparent border-[#FFD700] text-[#FFD700] hover:bg-[#FFD700] hover:text-[#1E3A8A]"
+              onClick={() => router.push('/signin')}
+            >
+              Sign In
+            </Button>
+          )}
+          <Button 
+            variant="outline" 
+            className="bg-transparent border-[#FFD700] text-[#FFD700] hover:bg-[#FFD700] hover:text-[#1E3A8A]"
+            onClick={handleExploreMarketplace}
+          >
+            Marketplace
+          </Button>
+        </div>
+      </header>
+
       {/* Hero Section */}
-      <section className="relative flex flex-1 items-center justify-center overflow-hidden px-4 py-16 md:py-24 lg:py-32">
-        <div className="absolute inset-0 opacity-20 animate-pulse">
-          <div className="absolute inset-0 bg-[url('data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iNjAiIGhlaWdodD0iNjAiIHZpZXdCb3g9IjAgMCA2MCA2MCIgeG1sbnM9Imh0dHA6Ly93d3cudzMub3JnLzIwMDAvc3ZnIj48ZyBmaWxsPSJub25lIiBmaWxsLXJ1bGU9ImV2ZW5vZGQiPjxnIGZpbGw9IiNmZmZmZmYiIGZpbGwtb3BhY2l0eT0iMC40Ij48cGF0aCBkPSJNMzYgMzRjMCAxIDEgMiAyIDJoMnYtNGgtMmMtMSAwLTIgMS0yIDJ6TTMwIDRDMTMuNDMxIDQgMCAxNy40MzEgMCAzNHMxMy40MzEgMzAgMzAgMzAgMzAtMTMuNDMxIDMwLTMwUzQ2LjU2OSA0IDMwIDR6TTEwLjIyNSA0Mi42OGMtMi45ODQtOS45NDQtMS4zNTUtMjAuNDA5IDQuNDczLTI4Ljk3OUMyMS41MDcgNS4xMDcgMzAuOTkzIDIuMDk4IDQwLjY4IDQuNDdsMS41MDYsMS44M2MtOS45OTMsMi45NT0tMjAuNDMsMS4zMTQtMjksNC40MDZDNS45NDYsMTUuOTkzIDIuOTMsMjUuNDg5IDUuODMsMzUuNDM0YzIuOTUsOS45OTMsMS4zMTYsMjAuNDMsNC40MDYsMjkuMDU5QzE1Ljk5Nyw1MS45MzYsMjUuNDksNTQuOTQ1LDM1LjQ4LDQ1Ljk4OGM5Ljk5MS05Ljk1OCwyMC40MS0xMS41OSwyOS4wNDYsNC40NDdsMS44MDMsMS41MDZDMjcuMDU3LDQ5Ljc'}] bg-repeat" />
-        </div>
-        <div className="relative z-10 max-w-3xl text-center">
-          <h1 className="text-4xl font-bold tracking-tight md:text-5xl lg:text-6xl animate-fade-in-up">
-            Welcome to <span className="text-yellow-400">TradeWave</span>
-          </h1>
-          <p className="mt-6 text-lg text-gray-200 md:text-xl animate-fade-in-up delay-100">
-            A platform for creators, freelancers, and fans to connect, hire, and stream.
-          </p>
-          <div className="mt-10 flex justify-center gap-4 animate-fade-in-up delay-200">
-            <Button asChild className="bg-yellow-400 text-blue-900 hover:bg-yellow-500">
-              <Link href="/signin">Get Started</Link>
-            </Button>
-            <Button variant="outline" className="border-white text-white hover:bg-white/20">
-              Learn More
-            </Button>
-          </div>
-        </div>
+      <section className="flex-1 flex flex-col justify-center items-center text-center p-6 max-w-5xl mx-auto animate-fade-in">
+        <h2 className="text-5xl font-bold mb-6 text-[#FFD700]">Create, Share, and Monetize Your Content</h2>
+        <p className="text-xl mb-8 max-w-3xl text-white/90">TradeWave is the premier platform for creators to upload videos, music, art, and services, and for fans to discover exclusive content.</p>
+        <Button 
+          size="lg" 
+          className="bg-[#FFD700] text-[#1E3A8A] hover:bg-[#FFD700]/90 text-xl px-10 py-6"
+          onClick={handleGetStarted}
+        >
+          {user ? 'Go to Dashboard' : 'Get Started'}
+        </Button>
       </section>
 
       {/* Features Section */}
-      <section className="py-16 px-4 md:py-24 lg:py-32 bg-blue-950/50">
-        <div className="mx-auto max-w-7xl text-center">
-          <h2 className="text-3xl font-bold tracking-tight text-yellow-400 md:text-4xl animate-fade-in-up">
-            Key Features
-          </h2>
-          <p className="mt-4 text-lg text-gray-200 animate-fade-in-up delay-100">
-            Everything you need to create, connect, and earn.
-          </p>
-          <div className="mt-16 grid grid-cols-1 gap-8 md:grid-cols-3 animate-fade-in-up delay-200">
-            <Card className="border-teal-700 bg-teal-900/30 text-white p-6">
-              <CardHeader className="pb-2">
-                <CardTitle className="text-teal-400">Content Marketplace</CardTitle>
-                <CardDescription className="text-gray-300">Upload, share, and monetize your videos and projects.</CardDescription>
-              </CardHeader>
-              <CardContent>
-                <div className="flex flex-col gap-4">
-                  <p className="text-gray-300">
-                    Connect with fans and buyers through a vibrant marketplace.
-                  </p>
-                  <Button>
-                    Explore <ArrowRight className="ml-2 h-4 w-4" />
-                  </Button>
-                </div>
-              </CardContent>
-            </Card>
-            <Card className="border-red-700 bg-red-900/30 text-white p-6">
-              <CardHeader className="pb-2">
-                <CardTitle className="text-red-400">Hiring Platform</CardTitle>
-                <CardDescription className="text-gray-300">Post projects, bid on jobs, and collaborate seamlessly.</CardDescription>
-              </CardHeader>
-              <CardContent>
-                <div className="flex flex-col gap-4">
-                  <p className="text-gray-300">
-                    Find the perfect freelancer or project with our escrow system.
-                  </p>
-                  <Button>
-                    Hire Now <ArrowRight className="ml-2 h-4 w-4" />
-                  </Button>
-                </div>
-              </CardContent>
-            </Card>
-            <Card className="border-purple-700 bg-purple-900/30 text-white p-6">
-              <CardHeader className="pb-2">
-                <CardTitle className="text-purple-400">Streaming & Tokens</CardTitle>
-                <CardDescription className="text-gray-300">Go live, earn tokens, and engage with your audience.</CardDescription>
-              </CardHeader>
-              <CardContent>
-                <div className="flex flex-col gap-4">
-                  <p className="text-gray-300">
-                    Stream directly on TradeWave and monetize with WaveTokens.
-                  </p>
-                  <Button>
-                    Start Streaming <ArrowRight className="ml-2 h-4 w-4" />
-                  </Button>
-                </div>
-              </CardContent>
-            </Card>
+      <section className="py-20 px-6 bg-[#1E3A8A]/80 backdrop-blur-sm">
+        <div className="max-w-7xl mx-auto text-center">
+          <h3 className="text-3xl font-bold mb-12 text-[#FFD700]">Why Choose TradeWave?</h3>
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-8 max-w-5xl mx-auto">
+            <div className="p-6 rounded-lg bg-[#800080]/30 backdrop-blur-sm shadow-md animate-slide-in-left">
+              <div className="text-[#FFD700] text-5xl mb-4">💰</div>
+              <h4 className="text-xl font-semibold mb-2 text-white">Earn Tokens</h4>
+              <p className="text-white/80">Creators can earn tokens from their content and services, convertible to real money.</p>
+            </div>
+            <div className="p-6 rounded-lg bg-[#800080]/30 backdrop-blur-sm shadow-md animate-slide-in-up">
+              <div className="text-[#FFD700] text-5xl mb-4">🔒</div>
+              <h4 className="text-xl font-semibold mb-2 text-white">Secure Payments</h4>
+              <p className="text-white/80">Integrated Stripe for safe and easy transactions for token purchases and subscriptions.</p>
+            </div>
+            <div className="p-6 rounded-lg bg-[#800080]/30 backdrop-blur-sm shadow-md animate-slide-in-right">
+              <div className="text-[#FFD700] text-5xl mb-4">🌐</div>
+              <h4 className="text-xl font-semibold mb-2 text-white">Global Community</h4>
+              <p className="text-white/80">Connect with creators and fans worldwide, expanding your reach and influence.</p>
+            </div>
           </div>
         </div>
       </section>
 
-      {/* Additional Feature Cards */}
-      <section className="py-16 px-4 md:py-24 lg:py-32 bg-purple-950/50">
-        <div className="mx-auto max-w-7xl text-center">
-          <h2 className="text-3xl font-bold tracking-tight text-yellow-400 md:text-4xl animate-fade-in-up">
-            More to Explore
-          </h2>
-          <div className="mt-16 grid grid-cols-1 gap-8 md:grid-cols-3 animate-fade-in-up delay-100">
-            <Card className="border-yellow-700 bg-yellow-900/30 text-white p-6">
-              <CardHeader className="pb-2">
-                <CardTitle className="text-yellow-400">Community Features</CardTitle>
-                <CardDescription className="text-gray-300">Follow creators, comment, rate, and message.</CardDescription>
-              </CardHeader>
-              <CardContent>
-                <div className="flex flex-col gap-4">
-                  <p className="text-gray-300">
-                    Build connections and engage with a supportive community.
-                  </p>
-                  <Button>
-                    Join Now <ArrowRight className="ml-2 h-4 w-4" />
-                  </Button>
+      {/* Featured Content Section */}
+      <section className="py-20 px-6 bg-gradient-to-b from-[#1E3A8A] to-[#800080]">
+        <div className="max-w-7xl mx-auto text-center">
+          <h3 className="text-3xl font-bold mb-12 text-[#FFD700]">Featured Content</h3>
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6 max-w-5xl mx-auto">
+            <Card className="bg-white/10 backdrop-blur-sm border-none shadow-lg overflow-hidden animate-fade-in-up">
+              <CardContent className="p-0">
+                <div className="aspect-video bg-black/50 flex items-center justify-center">
+                  <span className="text-[#FFD700] text-xl">Video Content</span>
+                </div>
+                <div className="p-4">
+                  <h4 className="text-xl font-semibold mb-1 text-[#FFD700]">Amazing Video Title</h4>
+                  <p className="text-white/80 text-sm">Creator Name • 1.2K views</p>
+                  <p className="text-[#FFD700] font-medium mt-1">5 Tokens</p>
                 </div>
               </CardContent>
             </Card>
-            <Card className="border-teal-700 bg-teal-900/30 text-white p-6">
-              <CardHeader className="pb-2">
-                <CardTitle className="text-teal-400">Advanced Analytics</CardTitle>
-                <CardDescription className="text-gray-300">Track views, engagement, revenue, and growth.</CardDescription>
-              </CardHeader>
-              <CardContent>
-                <div className="flex flex-col gap-4">
-                  <p className="text-gray-300">
-                    Get detailed insights to optimize your content and strategy.
-                  </p>
-                  <Button>
-                    View Analytics <ArrowRight className="ml-2 h-4 w-4" />
-                  </Button>
+            <Card className="bg-white/10 backdrop-blur-sm border-none shadow-lg overflow-hidden animate-fade-in-up" style={{ animationDelay: '0.2s' }}>
+              <CardContent className="p-0">
+                <div className="aspect-video bg-black/50 flex items-center justify-center">
+                  <span className="text-[#FFD700] text-xl">Music Track</span>
+                </div>
+                <div className="p-4">
+                  <h4 className="text-xl font-semibold mb-1 text-[#FFD700]">Hit Single Track</h4>
+                  <p className="text-white/80 text-sm">Artist Name • 3.4K streams</p>
+                  <p className="text-[#FFD700] font-medium mt-1">3 Tokens</p>
                 </div>
               </CardContent>
             </Card>
-            <Card className="border-red-700 bg-red-900/30 text-white p-6">
-              <CardHeader className="pb-2">
-                <CardTitle className="text-red-400">AI-Powered Tools</CardTitle>
-                <CardDescription className="text-gray-300">Enhance content with AI moderation and recommendations.</CardDescription>
-              </CardHeader>
-              <CardContent>
-                <div className="flex flex-col gap-4">
-                  <p className="text-gray-300">
-                    Our AI-powered tools help you create better content, match with the right projects, and grow your audience.
-                  </p>
-                  <Button>
-                    Learn More <ArrowRight className="ml-2 h-4 w-4" />
-                  </Button>
+            <Card className="bg-white/10 backdrop-blur-sm border-none shadow-lg overflow-hidden animate-fade-in-up" style={{ animationDelay: '0.4s' }}>
+              <CardContent className="p-0">
+                <div className="aspect-video bg-black/50 flex items-center justify-center">
+                  <span className="text-[#FFD700] text-xl">Digital Art</span>
+                </div>
+                <div className="p-4">
+                  <h4 className="text-xl font-semibold mb-1 text-[#FFD700]">Unique Artwork</h4>
+                  <p className="text-white/80 text-sm">Artist Name • 850 views</p>
+                  <p className="text-[#FFD700] font-medium mt-1">8 Tokens</p>
                 </div>
               </CardContent>
             </Card>
           </div>
+          <Button 
+            variant="outline" 
+            className="mt-10 bg-transparent border-[#FFD700] text-[#FFD700] hover:bg-[#FFD700] hover:text-[#1E3A8A]"
+            onClick={handleExploreMarketplace}
+          >
+            Explore More Content
+          </Button>
         </div>
       </section>
+
+      {/* CTA Section */}
+      <section className="py-20 px-6 bg-[#800080]/80 backdrop-blur-sm text-center">
+        <div className="max-w-3xl mx-auto">
+          <h3 className="text-3xl font-bold mb-6 text-[#FFD700]">Join TradeWave Today</h3>
+          <p className="text-xl mb-8 text-white/90">Whether you're a creator looking to monetize your talents or a fan seeking exclusive content, TradeWave is the platform for you.</p>
+          <div className="flex flex-col sm:flex-row gap-6 justify-center">
+            <Button 
+              size="lg" 
+              className="bg-[#FFD700] text-[#1E3A8A] hover:bg-[#FFD700]/90"
+              onClick={handleGetStarted}
+            >
+              {user ? 'Go to Dashboard' : 'Sign Up Now'}
+            </Button>
+            <Button 
+              size="lg" 
+              variant="outline" 
+              className="border-[#FFD700] text-[#FFD700] hover:bg-[#FFD700]/20"
+              onClick={() => window.open('mailto:support@tradewave.com')}
+            >
+              Contact Support
+            </Button>
+          </div>
+        </div>
+      </section>
+
+      {/* Footer */}
+      <footer className="p-6 text-center text-white/70 text-sm bg-[#1E3A8A]/90">
+        <p>&copy; {new Date().getFullYear()} TradeWave. All rights reserved.</p>
+        <div className="flex justify-center gap-6 mt-2">
+          <a href="#" className="hover:text-[#FFD700]">Terms of Service</a>
+          <a href="#" className="hover:text-[#FFD700]">Privacy Policy</a>
+          <a href="#" className="hover:text-[#FFD700]">Cookie Policy</a>
+        </div>
+      </footer>
     </div>
-  )
+  );
 }
