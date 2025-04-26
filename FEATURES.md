@@ -129,7 +129,9 @@
 
 ## Future Features
 - [ ] Mobile App
-- [ ] Advanced AI Features
+- [ ] Advanced AI Features (OpenAI Whisper for video transcription, Gemini for recaps, Q&A, and text generation, AI-powered statistics, automated workflows)
+- [ ] Automated Token Earning System (fully automated, transparent, and fair)
+- [ ] Advanced Dashboard & Analytics (real-time views, supporters, live stats, video analytics, AI-powered insights)
 - [ ] Additional Payment Methods
 - [ ] More Social Features
 - [ ] Enhanced Analytics

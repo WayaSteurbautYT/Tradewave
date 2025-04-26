@@ -46,4 +46,65 @@ export async function getTransactions(uid: string) {
   const txRef = collection(doc(db, "users", uid), "transactions")
   const snapshot = await getDocs(txRef)
   return snapshot.docs.map(docSnap => ({ id: docSnap.id, ...docSnap.data() }))
+}
+
+// Spend tokens and split between platform, owner, creator/team, and buyer reward
+export async function spendAndSplitTokens({
+  buyerUid,
+  creatorUid,
+  teamUid = null,
+  amount,
+  description = "Token payment",
+  split = { platform: 0.1, owner: 0.05, creator: 0.8, buyer: 0.05 },
+  ownerUid = "owner",
+  platformUid = "platform"
+}: {
+  buyerUid: string,
+  creatorUid: string,
+  teamUid?: string | null,
+  amount: number,
+  description?: string,
+  split?: { platform: number, owner: number, creator: number, buyer: number },
+  ownerUid?: string,
+  platformUid?: string
+}) {
+  // Calculate splits
+  const platformShare = Math.round(amount * split.platform)
+  const ownerShare = Math.round(amount * split.owner)
+  const creatorShare = Math.round(amount * split.creator)
+  const buyerReward = Math.round(amount * split.buyer)
+  const totalSplit = platformShare + ownerShare + creatorShare + buyerReward
+  const adjustment = amount - totalSplit
+
+  // Adjust creator share if rounding error
+  const finalCreatorShare = creatorShare + adjustment
+
+  // Deduct from buyer
+  await spendTokens(buyerUid, amount, description)
+
+  // Add to creator or team
+  if (teamUid) {
+    await earnTokens(teamUid, finalCreatorShare, `Team earnings: ${description}`)
+  } else {
+    await earnTokens(creatorUid, finalCreatorShare, `Creator earnings: ${description}`)
+  }
+
+  // Add to platform
+  await earnTokens(platformUid, platformShare, `Platform fee: ${description}`)
+
+  // Add to owner
+  await earnTokens(ownerUid, ownerShare, `Owner fee: ${description}`)
+
+  // Reward buyer (optional)
+  if (buyerReward > 0) {
+    await earnTokens(buyerUid, buyerReward, `Buyer reward: ${description}`)
+  }
+
+  // Optionally: return split details
+  return {
+    platform: platformShare,
+    owner: ownerShare,
+    creator: finalCreatorShare,
+    buyer: buyerReward
+  }
 } 

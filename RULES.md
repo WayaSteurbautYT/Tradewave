@@ -17,9 +17,10 @@
 ## Token System Rules
 1. Minimum token balance: 10% of total earned tokens
 2. Token rewards are non-transferable
-3. Tokens cannot be purchased with real money
+3. Tokens have to be purchased with real money
 4. Token rewards are subject to review
 5. Tokens expire after 12 months of inactivity
+6. All money has to be converted to tokens excpet if you withdraw your money then you will be able to turn your tokens back into money but with a Transaction fee parts geos back to the platform and owner
 
 ## Hiring System Rules
 1. All project terms must be clearly defined
@@ -96,4 +97,7 @@
 2. User reporting system
 3. Manual review available
 4. Appeal process exists
-5. Transparent moderation policies 
+5. Transparent moderation policies
+
+## Project Documentation Rules
+1. Every project must include a video tutorial and written documentation. This is required as TradeWave is a content-on-request platform. 

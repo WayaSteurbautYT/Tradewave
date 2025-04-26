@@ -1,92 +1,102 @@
 "use client"
 
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
-import { DashboardHeader } from "@/components/dashboard-header"
-import { RecentActivity } from "@/components/recent-activity"
-import { StatsCards } from "@/components/stats-cards"
-import { TokenEconomy } from "@/components/token-economy"
-import { TrendingContent } from "@/components/trending-content"
-import { ErrorBoundary } from "react-error-boundary"
-
-// Create a fallback component
-function ErrorFallback({ error, resetErrorBoundary }) {
-  return (
-    <div className="p-4 border border-red-500 rounded-md bg-red-50 text-red-800">
-      <h2 className="text-lg font-semibold">Something went wrong:</h2>
-      <p className="text-sm">{error.message}</p>
-      <button onClick={resetErrorBoundary} className="mt-2 px-4 py-2 bg-red-600 text-white rounded-md hover:bg-red-700">
-        Try again
-      </button>
-    </div>
-  )
-}
+import { useState, useEffect } from "react"
+import { useAuth } from "@/lib/context/auth-context"
+import { db } from "@/lib/firebase"
+import { collection, getDocs, doc, getDoc } from "firebase/firestore"
+import { Card, CardHeader, CardTitle, CardContent } from "@/components/ui/card"
 
 export default function DashboardPage() {
+  const { user } = useAuth()
+  const [stats, setStats] = useState({
+    views: 0,
+    supporters: 0,
+    tokens: 0,
+    live: 0,
+  })
+  const [recent, setRecent] = useState<any[]>([])
+  const [loading, setLoading] = useState(true)
+
+  useEffect(() => {
+    async function fetchStats() {
+      if (!user) return
+      setLoading(true)
+      // Fetch portfolio for views/tokens
+      const profileRef = doc(db, "profiles", user.uid)
+      const profileSnap = await getDoc(profileRef)
+      let views = 0, tokens = 0
+      if (profileSnap.exists() && profileSnap.data().portfolio) {
+        for (const item of profileSnap.data().portfolio) {
+          views += item.views || 0
+          tokens += item.tokens || 0
+        }
+      }
+      // Fetch supporters (future: real data)
+      const supporters = 0 // Placeholder
+      // Fetch live stats (future: real data)
+      const live = 0 // Placeholder
+      setStats({ views, supporters, tokens, live })
+      // Fetch recent activity (uploads, earnings)
+      const videosSnap = await getDocs(collection(db, "videos", user.uid, "userVideos"))
+      const txSnap = await getDocs(collection(db, "tokens", user.uid, "transactions"))
+      const recentUploads = videosSnap.docs.map(doc => ({
+        type: "Upload",
+        title: doc.data().title,
+        date: doc.data().createdAt?.toDate?.() || null,
+      }))
+      const recentEarnings = txSnap.docs.filter(doc => doc.data().amount > 0).map(doc => ({
+        type: "Earning",
+        title: doc.data().description,
+        date: doc.data().createdAt?.toDate?.() || null,
+      }))
+      setRecent([...recentUploads, ...recentEarnings].sort((a, b) => (b.date?.getTime?.() || 0) - (a.date?.getTime?.() || 0)).slice(0, 8))
+      setLoading(false)
+    }
+    fetchStats()
+  }, [user])
+
   return (
-    <div className="flex flex-col">
-      <DashboardHeader />
-      <div className="flex-1 space-y-4 p-8 pt-6">
-        <Tabs defaultValue="overview" className="space-y-4">
-          <TabsList className="bg-teal-900/30 border border-teal-800">
-            <TabsTrigger value="overview" className="data-[state=active]:bg-teal-800 data-[state=active]:text-teal-100">
-              Overview
-            </TabsTrigger>
-            <TabsTrigger
-              value="analytics"
-              className="data-[state=active]:bg-teal-800 data-[state=active]:text-teal-100"
-            >
-              Analytics
-            </TabsTrigger>
-            <TabsTrigger value="projects" className="data-[state=active]:bg-teal-800 data-[state=active]:text-teal-100">
-              Projects
-            </TabsTrigger>
-            <TabsTrigger value="earnings" className="data-[state=active]:bg-teal-800 data-[state=active]:text-teal-100">
-              Earnings
-            </TabsTrigger>
-          </TabsList>
-          <TabsContent value="overview" className="space-y-4">
-            <ErrorBoundary FallbackComponent={ErrorFallback}>
-              <StatsCards />
-            </ErrorBoundary>
-            <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-7">
-              <Card className="col-span-4 bg-[#0f172a] border-teal-800">
-                <CardHeader>
-                  <CardTitle className="text-teal-300">Recent Activity</CardTitle>
-                  <CardDescription>Your latest interactions on the platform</CardDescription>
-                </CardHeader>
-                <CardContent>
-                  <ErrorBoundary FallbackComponent={ErrorFallback}>
-                    <RecentActivity />
-                  </ErrorBoundary>
-                </CardContent>
-              </Card>
-              <Card className="col-span-3 bg-[#0f172a] border-teal-800">
-                <CardHeader>
-                  <CardTitle className="text-teal-300">Token Economy</CardTitle>
-                  <CardDescription>Your token earnings and spending</CardDescription>
-                </CardHeader>
-                <CardContent>
-                  <ErrorBoundary FallbackComponent={ErrorFallback}>
-                    <TokenEconomy />
-                  </ErrorBoundary>
-                </CardContent>
-              </Card>
-            </div>
-            <Card className="bg-[#0f172a] border-teal-800">
-              <CardHeader>
-                <CardTitle className="text-teal-300">Trending Content</CardTitle>
-                <CardDescription>Popular content you might be interested in</CardDescription>
-              </CardHeader>
-              <CardContent>
-                <ErrorBoundary FallbackComponent={ErrorFallback}>
-                  <TrendingContent />
-                </ErrorBoundary>
-              </CardContent>
-            </Card>
-          </TabsContent>
-        </Tabs>
+    <div className="max-w-5xl mx-auto py-10">
+      <h1 className="text-3xl font-bold mb-8 text-teal-300">Dashboard</h1>
+      <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-6 mb-10">
+        <Card className="bg-teal-950/60 border-teal-800">
+          <CardHeader><CardTitle className="text-lg text-teal-200">Total Views</CardTitle></CardHeader>
+          <CardContent><div className="text-3xl font-bold text-teal-400">{loading ? '...' : stats.views}</div></CardContent>
+        </Card>
+        <Card className="bg-teal-950/60 border-teal-800">
+          <CardHeader><CardTitle className="text-lg text-teal-200">Supporters</CardTitle></CardHeader>
+          <CardContent><div className="text-3xl font-bold text-teal-400">{loading ? '...' : stats.supporters}</div></CardContent>
+        </Card>
+        <Card className="bg-teal-950/60 border-teal-800">
+          <CardHeader><CardTitle className="text-lg text-teal-200">Tokens Earned</CardTitle></CardHeader>
+          <CardContent><div className="text-3xl font-bold text-teal-400">{loading ? '...' : stats.tokens}</div></CardContent>
+        </Card>
+        <Card className="bg-teal-950/60 border-teal-800">
+          <CardHeader><CardTitle className="text-lg text-teal-200">Live Stats</CardTitle></CardHeader>
+          <CardContent><div className="text-3xl font-bold text-teal-400">{loading ? '...' : stats.live}</div></CardContent>
+        </Card>
       </div>
+      <Card className="mb-10 bg-teal-950/60 border-teal-800">
+        <CardHeader><CardTitle className="text-2xl text-teal-200">Recent Activity</CardTitle></CardHeader>
+        <CardContent>
+          <ul className="divide-y divide-teal-900">
+            {recent.length === 0 && <li className="py-4 text-teal-500">No recent activity.</li>}
+            {recent.map((item, idx) => (
+              <li key={idx} className="py-3 flex items-center justify-between">
+                <span className="font-semibold text-teal-300">{item.type}</span>
+                <span className="text-teal-200">{item.title}</span>
+                <span className="text-xs text-teal-500">{item.date ? item.date.toLocaleString() : ''}</span>
+              </li>
+            ))}
+          </ul>
+        </CardContent>
+      </Card>
+      <Card className="bg-teal-950/60 border-teal-800">
+        <CardHeader><CardTitle className="text-2xl text-teal-200">AI Insights & Live Analytics</CardTitle></CardHeader>
+        <CardContent>
+          <div className="text-teal-400">Coming soon: AI-powered recaps, suggestions, and real-time analytics using Whisper & Gemini.</div>
+        </CardContent>
+      </Card>
     </div>
   )
 }
