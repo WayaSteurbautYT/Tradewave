@@ -1,9 +1,9 @@
 'use client';
 
 import React, { createContext, useContext, useState, useEffect, ReactNode } from 'react';
-import { onAuthStateChanged, User, signOut as firebaseSignOut, sendEmailVerification as firebaseSendEmailVerification } from 'firebase/auth';
+import { onAuthStateChanged, User, signOut as firebaseSignOut, sendEmailVerification as firebaseSendEmailVerification, GoogleAuthProvider, signInWithPopup, signInWithEmailAndPassword, createUserWithEmailAndPassword } from 'firebase/auth';
 import { auth } from '@/lib/firebase'; // Assuming auth is exported from firebase.ts
-import { upsertUser, getUserProfile, updateUserProfile, UserProfile } from '@/lib/firestoreService'; // Import Firestore functions
+import { upsertUser, getUserProfile, updateUserProfile, UserProfile, updateUserStripeCustomerId } from '@/lib/firestoreService'; // Import Firestore functions
 
 interface AuthContextType {
     user: User | null;
@@ -14,7 +14,11 @@ interface AuthContextType {
     sendEmailVerification: () => Promise<void>;
     refreshProfile: () => Promise<void>;
     updateProfile: (profileData: Partial<UserProfile>) => Promise<void>;
-    // Add sign-in methods if needed here, or handle them in specific components/pages
+    signInWithGoogle: () => Promise<void>;
+    signInWithEmail: (email: string, password: string) => Promise<void>;
+    signUpWithEmail: (email: string, password: string) => Promise<void>;
+    ensureStripeCustomer: () => Promise<string | null>;
+    // Add Discord/YouTube sign-in as needed
 }
 
 const AuthContext = createContext<AuthContextType>({
@@ -26,6 +30,10 @@ const AuthContext = createContext<AuthContextType>({
     sendEmailVerification: async () => {},
     refreshProfile: async () => {},
     updateProfile: async () => {},
+    signInWithGoogle: async () => {},
+    signInWithEmail: async () => {},
+    signUpWithEmail: async () => {},
+    ensureStripeCustomer: async () => null,
 });
 
 export const AuthProvider = ({ children }: { children: ReactNode }) => {
@@ -112,6 +120,42 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
         }
     };
 
+    // Google sign-in
+    const signInWithGoogle = async () => {
+        const provider = new GoogleAuthProvider();
+        await signInWithPopup(auth, provider);
+    };
+
+    // Email/password sign-in
+    const signInWithEmail = async (email: string, password: string) => {
+        await signInWithEmailAndPassword(auth, email, password);
+    };
+
+    // Email/password sign-up
+    const signUpWithEmail = async (email: string, password: string) => {
+        await createUserWithEmailAndPassword(auth, email, password);
+    };
+
+    // Ensure Stripe customer exists for the user
+    const ensureStripeCustomer = async (): Promise<string | null> => {
+        if (!user) return null;
+        if (userProfile?.stripeCustomerId) return userProfile.stripeCustomerId;
+        // Call your API to create a Stripe customer
+        const response = await fetch('/api/stripe/setup-intent', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ email: user.email })
+        });
+        if (!response.ok) return null;
+        const { customerId } = await response.json();
+        if (customerId) {
+            await updateUserStripeCustomerId(user.uid, customerId);
+            await refreshProfile();
+            return customerId;
+        }
+        return null;
+    };
+
     return (
         <AuthContext.Provider
             value={{
@@ -123,6 +167,10 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
                 sendEmailVerification,
                 refreshProfile,
                 updateProfile,
+                signInWithGoogle,
+                signInWithEmail,
+                signUpWithEmail,
+                ensureStripeCustomer,
             }}
         >
             {children}

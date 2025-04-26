@@ -76,7 +76,7 @@ const PaymentMethodForm: React.FC<PaymentMethodFormProps> = ({ user, onSuccess, 
       setCustomerId(customerId);
       onCustomerCreated?.(customerId);
       return clientSecret;
-    } catch (err) {
+    } catch (err: any) {
       setError(err.message);
       throw err;
     } finally {

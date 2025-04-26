@@ -5,7 +5,7 @@ import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { Icons } from "@/components/icons"
-import { useAuth } from "@/lib/context/auth-context"
+import { useAuth } from "@/contexts/AuthContext"
 import { useToast } from "@/components/ui/use-toast"
 import { db } from "@/lib/firebase"
 import { doc, setDoc, getDoc, serverTimestamp } from "firebase/firestore"
@@ -16,7 +16,7 @@ export function LoginForm() {
   const [password, setPassword] = useState("")
   const [error, setError] = useState<string | null>(null)
   const router = useRouter()
-  const { signIn, signInWithGoogle, signInAnonymously } = useAuth() as any
+  const { signInWithEmail, signInWithGoogle, userProfile, refreshProfile } = useAuth()
   const { toast } = useToast()
 
   // Ensure role is selected
@@ -25,47 +25,18 @@ export function LoginForm() {
     return null
   }
 
-  async function createUserAndProfileIfNotExists(user: any) {
-    const userRef = doc(db, "users", user.uid)
-    const profileRef = doc(db, "profiles", user.uid)
-    const userSnap = await getDoc(userRef)
-    if (!userSnap.exists()) {
-      const role = localStorage.getItem("tradewave_role") || "viewer"
-      await setDoc(userRef, {
-        uid: user.uid,
-        email: user.email || null,
-        role,
-        createdAt: serverTimestamp(),
-      })
-    }
-    const profileSnap = await getDoc(profileRef)
-    if (!profileSnap.exists()) {
-      const role = localStorage.getItem("tradewave_role") || "viewer"
-      const username = user.email ? user.email.split("@")[0] : user.uid.slice(0, 8)
-      await setDoc(profileRef, {
-        uid: user.uid,
-        email: user.email || null,
-        role,
-        username,
-        name: user.displayName || username,
-        joinDate: new Date().toLocaleString(),
-        tokens: 0,
-        skills: [],
-      })
-      return false // profile was just created
-    }
-    return true // profile already existed
-  }
-
-  async function onSubmit(e: React.FormEvent) {
+  async function handleLogin(e: React.FormEvent) {
     e.preventDefault()
     setIsLoading(true)
     setError(null)
     try {
-      const cred = await signIn(email, password)
-      const profileExists = await createUserAndProfileIfNotExists(cred.user)
-      toast({ title: "Success", description: "You have been logged in." })
-      router.push(profileExists ? "/dashboard" : "/profile/setup")
+      await signInWithEmail(email, password)
+      await refreshProfile()
+      if (!userProfile?.role) {
+        router.push('/role')
+      } else {
+        router.push('/dashboard')
+      }
     } catch (error: any) {
       setError(error?.message || "Invalid email or password.")
       toast({ variant: "destructive", title: "Error", description: error?.message || "Invalid email or password." })
@@ -74,14 +45,17 @@ export function LoginForm() {
     }
   }
 
-  const handleGoogleSignIn = async () => {
+  async function handleGoogleSignIn() {
     setIsLoading(true)
     setError(null)
     try {
-      const cred = await signInWithGoogle()
-      const profileExists = await createUserAndProfileIfNotExists(cred.user)
-      toast({ title: "Success", description: "You have been logged in with Google." })
-      router.push(profileExists ? "/dashboard" : "/profile/setup")
+      await signInWithGoogle()
+      await refreshProfile()
+      if (!userProfile?.role) {
+        router.push('/role')
+      } else {
+        router.push('/dashboard')
+      }
     } catch (error: any) {
       setError(error?.message || "Could not login with Google.")
       toast({ variant: "destructive", title: "Error", description: error?.message || "Could not login with Google." })
@@ -90,25 +64,9 @@ export function LoginForm() {
     }
   }
 
-  const handleAnonymousSignIn = async () => {
-    setIsLoading(true)
-    setError(null)
-    try {
-      const cred = await signInAnonymously()
-      const profileExists = await createUserAndProfileIfNotExists(cred.user)
-      toast({ title: "Success", description: "You are signed in anonymously." })
-      router.push(profileExists ? "/dashboard" : "/profile/setup")
-    } catch (error: any) {
-      setError(error?.message || "Could not sign in anonymously.")
-      toast({ variant: "destructive", title: "Error", description: error?.message || "Could not sign in anonymously." })
-    } finally {
-      setIsLoading(false)
-    }
-  }
-
   return (
     <div className="grid gap-6 animate-fade-in">
-      <form onSubmit={onSubmit} className="bg-gradient-to-br from-background via-muted to-card rounded-xl shadow-2xl p-6 space-y-4 transition-all duration-300">
+      <form onSubmit={handleLogin} className="bg-gradient-to-br from-background via-muted to-card rounded-xl shadow-2xl p-6 space-y-4 transition-all duration-300">
         <div className="grid gap-4">
           <div className="grid gap-2">
             <Label htmlFor="email">Email</Label>
@@ -170,20 +128,6 @@ export function LoginForm() {
           <Icons.google className="mr-2 h-4 w-4" />
         )}
         Google
-      </Button>
-      <Button
-        variant="outline"
-        type="button"
-        disabled={isLoading}
-        onClick={handleAnonymousSignIn}
-        className="w-full shadow-lg hover:scale-[1.02] transition-transform"
-      >
-        {isLoading ? (
-          <Icons.spinner className="mr-2 h-4 w-4 animate-spin" />
-        ) : (
-          <Icons.moon className="mr-2 h-4 w-4" />
-        )}
-        Continue as Guest
       </Button>
     </div>
   )
