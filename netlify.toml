@@ -12,6 +12,11 @@ service cloud.firestore {
     match /transactions/{transactionId} {
       allow read, write: if request.auth != null;
     }
+    match /withdrawals/{withdrawalId} {
+      allow create: if request.auth != null;
+      allow read: if request.auth != null && request.auth.uid == resource.data.uid;
+      allow update, delete: if request.auth != null && request.auth.token.admin == true;
+    }
     match /marketplace/{itemId} {
       allow read: if true;
       allow write: if request.auth != null && request.auth.uid == resource.data.ownerId;
